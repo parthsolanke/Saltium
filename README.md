@@ -1,2 +1,2 @@
 # Saltium
-🧂 Saltium is a secure file-sharing app that encrypts and protects your files with JWT-based access control.
+Saltium 🔐 is a secure file-sharing platform designed to protect your files with cutting-edge encryption and JWT-based access control. Easily upload, encrypt, and share files with confidence, knowing that only authorized users with valid JWT tokens can access your download links. With features like token expiration and link invalidation, Saltium ensures your file-sharing process is both secure and efficient. Perfect for developers and organizations looking to integrate secure file sharing into their applications.
