@@ -5,7 +5,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const requiredEnv = [
     'PORT',
-    'mongoURI',
+    'MONGO_URI',
     'JWT_SECRET',
     'SECRET_KEY',
     'JWT_EXPIRATION',
@@ -19,10 +19,10 @@ if (missingEnv.length) {
 }
 
 module.exports = {
-    port: process.env.PORT || 3000,
+    port: process.env.PORT,
     mongoURI: process.env.MONGO_URI,
     jwtSecret: process.env.JWT_SECRET,
     secretKey: process.env.SECRET_KEY,
-    jwtExpiration: process.env.JWT_EXPIRATION || '1h',
-    maxFileSize: process.env.MAX_FILE_SIZE || '10mb',
+    jwtExpiration: process.env.JWT_EXPIRATION,
+    maxFileSize: process.env.MAX_FILE_SIZE,
 };
