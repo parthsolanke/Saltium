@@ -1,6 +1,7 @@
 const crypto = require('crypto');
+const env = require('../config/env');
 const algorithm = 'aes-256-cbc';
-const key = crypto.scryptSync(process.env.SECRET_KEY, 'salt', 32);
+const key = crypto.scryptSync(env.secretKey, 'salt', 32);
 
 exports.encryptFile = (buffer) => {
     const iv = crypto.randomBytes(16);
