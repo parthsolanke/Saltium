@@ -1,16 +1,23 @@
-require('./config/database');
+// server.js
+require("./config/database")
 const express = require('express');
+const morgan = require('morgan');
+const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/ratelimiter');
 const rootRouter = require('./config/rootRouter');
 const env = require('./config/env');
+const logger = require('./config/logger');
 
-const PORT = env.port;
 const app = express();
+const PORT = env.port;
 
+app.use(cors());
+app.use(morgan('tiny', { stream: logger.stream }));
 app.use(express.json());
-app.use('/api/v1', rootRouter);
-app.use(errorHandler)
+app.use('/api/v1', apiLimiter, rootRouter);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });
