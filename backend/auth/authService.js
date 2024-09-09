@@ -1,3 +1,4 @@
+// auth/authService.js
 const User = require('../models/User');
 const jwtUtils = require('../utils/jwtUtils');
 const bcrypt = require('bcrypt');
