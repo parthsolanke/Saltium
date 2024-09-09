@@ -1,7 +1,8 @@
+// utils/jwtUtils
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 
-exports.generateToken = (user) => {
+exports.generateUserToken = (user) => {
     return jwt.sign({ id: user._id, username: user.username }, env.jwtSecret, {
         expiresIn: env.jwtExpiration,
     });
