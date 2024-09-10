@@ -1,4 +1,4 @@
-// config/rootRouter.js
+// config/privateRouter.js
 const { Router } = require('express')
 const authRoutes = require('../auth/authRoutes');
 const fileRoutes = require('../file/fileRoutes');
