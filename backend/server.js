@@ -5,7 +5,8 @@ const morgan = require('morgan');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/ratelimiter');
-const { privateRouter, publicRouter } = require('./config/routers');
+const privateRouter = require('./config/privateRouter')
+const publicRouter = require('./config/publicRouter')
 const env = require('./config/env');
 const logger = require('./config/logger');
 
