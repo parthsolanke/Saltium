@@ -19,7 +19,7 @@ const ensureUploadsDirExists = () => {
     return uploadsDir;
 };
 
-// Mock malware scanner
+// Mock malware scanner, TODO:
 const scanFile = async (file) => {
     const isMalicious = false;
     return isMalicious;
