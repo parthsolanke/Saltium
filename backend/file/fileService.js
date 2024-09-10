@@ -7,14 +7,6 @@ const cryptoUtils = require('../utils/cryptoUtils');
 const jwtUtils = require('../utils/jwtUtils');
 const fileUtils = require('../utils/fileUtils')
 
-const checkIfFileExists = async (fileHash, userId) => {
-    return await File.findOne({ fileHash, uploadedBy: userId });
-};
-
-const saveFileToDisk = (filePath, bufferToSave) => {
-    fs.writeFileSync(filePath, bufferToSave);
-};
-
 const createFileRecord = async (file, filePath, userId) => {
     const fileData = new File({
         filename: fileUtils.sanitize(file.originalname),
@@ -28,7 +20,7 @@ const createFileRecord = async (file, filePath, userId) => {
         return await fileData.save();
     } catch (err) {
         if (err.code === 11000) {
-            logger.log(`Duplicate file entry detected for ${file.originalname}.`);
+            logger.info(`Duplicate file entry detected for ${file.originalname}.`);
             return await File.findOne({ fileHash: fileData.fileHash, uploadedBy: userId });
         } else {
             throw err;
@@ -42,18 +34,18 @@ exports.uploadFiles = async (files, user) => {
         const uploadsDir = fileUtils.ensureUploadsDirExists();
 
         for (const file of files) {
-            const fileHash = fileUtils.generateFileHash(file.buffer);
-            const existingFile = await checkIfFileExists(fileHash, user.id);
+            const fileHash = fileUtils.generateFileHash(file.buffer, user.id);
+            const existingFile = await File.findOne({ fileHash, uploadedBy: user.id });
 
             if (existingFile) {
-                console.log(`File ${file.originalname} with hash ${fileHash} already exists for user ${user.id}.`);
+                logger.info(`File ${file.originalname} with hash ${fileHash} already exists for user ${user.id}.`);
                 fileDataArray.push(existingFile);
                 continue;
             }
 
             const filePath = path.join(uploadsDir, `${fileHash}-${fileUtils.sanitize(file.originalname)}`);
             const bufferToSave = cryptoUtils.encryptFile(file.buffer);
-            saveFileToDisk(filePath, bufferToSave);
+            fileUtils.saveFileToDisk(filePath, bufferToSave);
 
             const fileData = await createFileRecord(file, filePath, user.id);
             fileDataArray.push(fileData);
@@ -61,7 +53,7 @@ exports.uploadFiles = async (files, user) => {
 
         return fileDataArray;
     } catch (error) {
-        console.error('Error uploading files:', error);
+        logger.error('Error uploading files:', error);
         throw error;
     }
 };
