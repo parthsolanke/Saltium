@@ -1,10 +1,13 @@
 // file/fileController.js
 const fileService = require('./fileService');
 
-exports.uploadFile = async (req, res, next) => {
+exports.uploadFiles = async (req, res, next) => {
     try {
-        const fileData = await fileService.uploadFile(req.file, req.user);
-        res.status(201).json({ message: 'File uploaded', fileData });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded.' });
+        }
+        const fileDataArray = await fileService.uploadFiles(req.files, req.user);
+        res.status(201).json({ message: 'Files uploaded', fileDataArray });
     } catch (error) {
         next(error);
     }
