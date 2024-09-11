@@ -6,7 +6,7 @@ const { Readable } = require('stream');
 const File = require('../models/File');
 const logger = require('../config/logger');
 const cryptoUtils = require('../utils/cryptoUtils');
-const jwtUtils = require('../utils/jwtUtils');
+const { cleanupUploads } = require('../utils/cleanupUtils')
 const fileUtils = require('../utils/fileUtils')
 
 const createFileRecord = async (file, filePath, userId) => {
@@ -77,6 +77,7 @@ exports.downloadFilesWithToken = async (req, res) => {
 
         if (files.length === 1) {
             const { fileStream, filename } = await getDecryptedFileStream(files[0]);
+            cleanupUploads(files)
             return { fileStream, filename, singleFile: true };
         }
         const archive = archiver('zip', { zlib: { level: 9 } });
@@ -89,10 +90,9 @@ exports.downloadFilesWithToken = async (req, res) => {
         for (const file of files) {
             const { fileStream, filename } = await getDecryptedFileStream(file);
             archive.append(fileStream, { name: filename });
+            cleanupUploads(files)
         }
-
         await archive.finalize();
-
         return { singleFile: false };
 
     } catch (error) {
