@@ -4,25 +4,15 @@ const path = require('path');
 const File = require('../models/File');
 const logger = require('../config/logger');
 
-const cleanupUploads = async (fileIds) => {
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
-
+const cleanupUploads = async (files) => {
     try {
-        for (const fileId of fileIds) {
-            const file = await File.findById(fileId);
-
-            if (file) {
-                const filePath = path.join(uploadsDir, file.filename);
-                try {
-                    await fs.promises.unlink(filePath);
-                    logger.info(`Removed file: ${file.filename}`);
-                } catch (error) {
-                    logger.error(`Error removing file: ${file.filename} - ${error.message}`);
-                }
-
-                await removeFileEntryFromDB(fileId);
-            } else {
-                logger.warn(`File not found for ID: ${fileId}`);
+        for (const file of files) {
+            try {
+                await fs.promises.unlink(file.filePath);
+                logger.info(`Removed file: ${file.filename}`);
+                await removeFileEntryFromDB(file._id);
+            } catch (error) {
+                logger.error(`Error removing file: ${file.filename} - ${error.message}`);
             }
         }
     } catch (error) {
@@ -31,7 +21,7 @@ const cleanupUploads = async (fileIds) => {
     }
 };
 
-const removeFileEntriesFromDB = async (fileIds) => {
+const removeFileEntryFromDB = async (fileId) => {
     try {
         const result = await File.findByIdAndDelete(fileId);
         if (result) {
@@ -48,5 +38,5 @@ const removeFileEntriesFromDB = async (fileIds) => {
 // Exporting the functions
 module.exports = {
     cleanupUploads,
-    removeFileEntriesFromDB
+    removeFileEntryFromDB,
 };
