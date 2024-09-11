@@ -35,7 +35,6 @@ const removeFileEntryFromDB = async (fileId) => {
     }
 };
 
-// Exporting the functions
 module.exports = {
     cleanupUploads,
     removeFileEntryFromDB,
