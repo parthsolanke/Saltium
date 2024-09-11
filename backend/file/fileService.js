@@ -1,19 +1,13 @@
 // file/fileService.js
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
+const { Readable } = require('stream');
 const File = require('../models/File');
 const logger = require('../config/logger');
 const cryptoUtils = require('../utils/cryptoUtils');
-const jwtUtils = require('../utils/jwtUtils');
+const { cleanupUploads } = require('../utils/cleanupUtils')
 const fileUtils = require('../utils/fileUtils')
-
-const checkIfFileExists = async (fileHash, userId) => {
-    return await File.findOne({ fileHash, uploadedBy: userId });
-};
-
-const saveFileToDisk = (filePath, bufferToSave) => {
-    fs.writeFileSync(filePath, bufferToSave);
-};
 
 const createFileRecord = async (file, filePath, userId) => {
     const fileData = new File({
@@ -28,12 +22,22 @@ const createFileRecord = async (file, filePath, userId) => {
         return await fileData.save();
     } catch (err) {
         if (err.code === 11000) {
-            logger.log(`Duplicate file entry detected for ${file.originalname}.`);
+            logger.info(`Duplicate file entry detected for ${file.originalname}.`);
             return await File.findOne({ fileHash: fileData.fileHash, uploadedBy: userId });
         } else {
             throw err;
         }
     }
+};
+
+const getDecryptedFileStream = async (file) => {
+    const fileBuffer = fs.readFileSync(file.filePath);
+    const decryptedBuffer = await cryptoUtils.decryptFile(fileBuffer);
+    const fileStream = Readable.from(decryptedBuffer);
+    return {
+        fileStream,
+        filename: file.filename
+    };
 };
 
 exports.uploadFiles = async (files, user) => {
@@ -42,18 +46,18 @@ exports.uploadFiles = async (files, user) => {
         const uploadsDir = fileUtils.ensureUploadsDirExists();
 
         for (const file of files) {
-            const fileHash = fileUtils.generateFileHash(file.buffer);
-            const existingFile = await checkIfFileExists(fileHash, user.id);
+            const fileHash = fileUtils.generateFileHash(file.buffer, user.id);
+            const existingFile = await File.findOne({ fileHash, uploadedBy: user.id });
 
             if (existingFile) {
-                console.log(`File ${file.originalname} with hash ${fileHash} already exists for user ${user.id}.`);
+                logger.info(`File ${file.originalname} with hash ${fileHash} already exists for user ${user.id}.`);
                 fileDataArray.push(existingFile);
                 continue;
             }
 
             const filePath = path.join(uploadsDir, `${fileHash}-${fileUtils.sanitize(file.originalname)}`);
             const bufferToSave = cryptoUtils.encryptFile(file.buffer);
-            saveFileToDisk(filePath, bufferToSave);
+            fileUtils.saveFileToDisk(filePath, bufferToSave);
 
             const fileData = await createFileRecord(file, filePath, user.id);
             fileDataArray.push(fileData);
@@ -61,19 +65,37 @@ exports.uploadFiles = async (files, user) => {
 
         return fileDataArray;
     } catch (error) {
-        console.error('Error uploading files:', error);
+        logger.error('Error uploading files:', error);
         throw error;
     }
 };
 
-exports.downloadFile = async (fileId, token) => {
-    const validToken = jwtUtils.verifyToken(token);
-    if (!validToken) throw new Error('Invalid or expired token');
+exports.downloadFilesWithToken = async (req, res) => {
+    try {
+        const files = await File.find({ _id: { $in: req.fileIds }, uploadedBy: req.userId });
+        if (!files || files.length === 0) throw new Error('Files not found or unauthorized access.');
 
-    const fileData = await File.findById(fileId);
-    if (!fileData) throw new Error('File not found');
+        if (files.length === 1) {
+            const { fileStream, filename } = await getDecryptedFileStream(files[0]);
+            cleanupUploads(files)
+            return { fileStream, filename, singleFile: true };
+        }
+        const archive = archiver('zip', { zlib: { level: 9 } });
 
-    const fileBuffer = fs.readFileSync(fileData.filePath);
-    const decryptedBuffer = await cryptoUtils.decryptFile(fileBuffer);
-    return fs.createReadStream(decryptedBuffer);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=files.zip');
+
+        archive.pipe(res);
+
+        for (const file of files) {
+            const { fileStream, filename } = await getDecryptedFileStream(file);
+            archive.append(fileStream, { name: filename });
+            cleanupUploads(files)
+        }
+        await archive.finalize();
+        return { singleFile: false };
+
+    } catch (error) {
+        throw new Error(error.message || 'Error during file download');
+    }
 };

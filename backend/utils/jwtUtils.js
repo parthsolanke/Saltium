@@ -11,3 +11,7 @@ exports.generateUserToken = (user) => {
 exports.verifyToken = (token) => {
     return jwt.verify(token, env.jwtSecret);
 };
+
+exports.generateFileDownloadToken = (payload) => {
+    return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiration });
+};

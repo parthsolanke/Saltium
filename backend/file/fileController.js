@@ -1,5 +1,7 @@
 // file/fileController.js
 const fileService = require('./fileService');
+const jwtUtils = require('../utils/jwtUtils');
+const File = require('../models/File');
 
 exports.uploadFiles = async (req, res, next) => {
     try {
@@ -13,11 +15,41 @@ exports.uploadFiles = async (req, res, next) => {
     }
 };
 
+exports.generateDownloadLink = async (req, res, next) => {
+    try {
+        const { fileIds } = req.body;
+        if (!fileIds || fileIds.length === 0) {
+            return res.status(400).json({ message: 'No file IDs provided' });
+        }
+
+        const files = await File.find({ _id: { $in: fileIds }, uploadedBy: req.user.id });
+        if (files.length !== fileIds.length) {
+            return res.status(404).json({ message: 'Some files not found or not authorized' });
+        }
+
+        const downloadToken = jwtUtils.generateFileDownloadToken({ fileIds, userId: req.user.id });
+        const downloadLink = `${req.protocol}://${req.get('host')}/api/v1/private/files/download?token=${downloadToken}`;
+
+        res.status(200).json({ downloadLink, message: 'Download link generated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.downloadFile = async (req, res, next) => {
     try {
-        const fileStream = await fileService.downloadFile(req.params.fileId, req.query.token);
-        fileStream.pipe(res);
+        const downloadResult = await fileService.downloadFilesWithToken(req, res);
+
+        if (downloadResult.singleFile) {
+            const { fileStream, filename } = downloadResult;
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            fileStream.pipe(res);
+        }
+        
     } catch (error) {
+        if (!res.headersSent) {
+            res.status(500).json({ message: error.message || 'File download failed' });
+        }
         next(error);
     }
 };
