@@ -1,5 +1,6 @@
 // middleware/uploadMiddleware.js
 const multer = require('multer');
+const { MulterError } = require('multer')
 const env = require("../config/env");
 const fileUtils = require('../utils/fileUtils');
 
@@ -11,6 +12,22 @@ exports.uploadMulter = multer({
         cb(null, true);
     }
 })
+
+exports.handleMulterError = (err, req, res, next) => {
+    if (err instanceof MulterError) {
+        switch (err.code) {
+            case 'LIMIT_FILE_SIZE':
+                return res.status(413).json({ message: 'File too large. Maximum allowed size is ' + env.maxFileSize + ' MB.' });
+            case 'LIMIT_FILE_COUNT':
+                return res.status(400).json({ message: 'Too many files uploaded. Maximum allowed is 10.' });
+            case 'LIMIT_UNEXPECTED_FILE':
+                return res.status(400).json({ message: 'Unexpected file field encountered.' });
+            default:
+                return res.status(400).json({ message: `Multer error: ${err.message}` });
+        }
+    }
+    next(err);
+};
 
 exports.scanForMalware = async (req, res, next) => {
     try {
