@@ -1,6 +1,8 @@
 // file/fileService.js
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
+const { Readable } = require('stream');
 const File = require('../models/File');
 const logger = require('../config/logger');
 const cryptoUtils = require('../utils/cryptoUtils');
@@ -26,6 +28,16 @@ const createFileRecord = async (file, filePath, userId) => {
             throw err;
         }
     }
+};
+
+const getDecryptedFileStream = async (file) => {
+    const fileBuffer = fs.readFileSync(file.filePath);
+    const decryptedBuffer = await cryptoUtils.decryptFile(fileBuffer);
+    const fileStream = Readable.from(decryptedBuffer);
+    return {
+        fileStream,
+        filename: file.filename
+    };
 };
 
 exports.uploadFiles = async (files, user) => {
@@ -58,14 +70,32 @@ exports.uploadFiles = async (files, user) => {
     }
 };
 
-exports.downloadFile = async (fileId, token) => {
-    const validToken = jwtUtils.verifyToken(token);
-    if (!validToken) throw new Error('Invalid or expired token');
+exports.downloadFilesWithToken = async (req, res) => {
+    try {
+        const files = await File.find({ _id: { $in: req.fileIds }, uploadedBy: req.userId });
+        if (!files || files.length === 0) throw new Error('Files not found or unauthorized access.');
 
-    const fileData = await File.findById(fileId);
-    if (!fileData) throw new Error('File not found');
+        if (files.length === 1) {
+            const { fileStream, filename } = await getDecryptedFileStream(files[0]);
+            return { fileStream, filename, singleFile: true };
+        }
+        const archive = archiver('zip', { zlib: { level: 9 } });
 
-    const fileBuffer = fs.readFileSync(fileData.filePath);
-    const decryptedBuffer = await cryptoUtils.decryptFile(fileBuffer);
-    return fs.createReadStream(decryptedBuffer);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=files.zip');
+
+        archive.pipe(res);
+
+        for (const file of files) {
+            const { fileStream, filename } = await getDecryptedFileStream(file);
+            archive.append(fileStream, { name: filename });
+        }
+
+        await archive.finalize();
+
+        return { singleFile: false };
+
+    } catch (error) {
+        throw new Error(error.message || 'Error during file download');
+    }
 };
