@@ -3,7 +3,7 @@
 const { Router } = require('express')
 const authRoutes = require('../auth/authRoutes');
 const fileRoutes = require('../file/fileRoutes');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const router = Router();
 
 router.use('/auth', authRoutes);
