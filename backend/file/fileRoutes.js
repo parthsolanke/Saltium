@@ -2,13 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const fileController = require('./fileController');
-const { uploadMulter, scanForMalware } = require('../middleware/uploadMiddleware')
+const { downloadAuthMiddleware } = require('../middleware/authMiddleware')
+const { uploadMulter, handleMulterError, scanForMalware } = require('../middleware/uploadMiddleware')
 
-router.post('/upload', uploadMulter.array('files', 10), scanForMalware, fileController.uploadFiles);
-// router.post('/generate-link/:fileId', fileController.generateDownloadLink);
-
-router.get('/download/:fileId', fileController.downloadFile);
-// router.get('/list', fileController.listFiles);
-// router.delete('/:fileId', fileController.deleteFile);
+router.post('/upload', uploadMulter.array('files', 10), handleMulterError, scanForMalware, fileController.uploadFiles);
+router.post('/generate-link', fileController.generateDownloadLink);
+router.get('/download', downloadAuthMiddleware, fileController.downloadFile);
 
 module.exports = router;
