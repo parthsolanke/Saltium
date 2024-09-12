@@ -1,4 +1,4 @@
-// file/fileRoutes.js
+// file/privateFileRoutes.js
 const express = require('express');
 const router = express.Router();
 const fileController = require('./fileController');
