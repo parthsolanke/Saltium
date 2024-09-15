@@ -1,12 +1,12 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import FileUploadCard from '@/components/UploadForm';
+import FileDownloadCard from '@/components/DownloadForm';
 
-export default function UploadPage() {
+export default function DownloadPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Header />
-      <FileUploadCard />
+      <FileDownloadCard />
       <Footer />
     </div>
   );
