@@ -15,7 +15,7 @@ export default function Footer() {
             className="flex items-center"
           >
             <img 
-              src="../public/github.svg"
+              src="./github.svg"
               alt="GitHub" 
               className="mr-2 h-4 w-4" 
             />
