@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function LoginCard() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -19,12 +24,21 @@ export default function LoginCard() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the login data to your backend
-    console.log('Login attempted:', formData);
-    // Reset form after submission
-    setFormData({ email: '', password: '' });
+    setErrorMessage('');
+    try {
+      const response = await axios.post(`${API_URL}/private/auth/login`, {
+        username: formData.email,
+        password: formData.password
+      });
+      localStorage.setItem('token', response.data.token);
+      navigate('/upload');
+      setFormData({ email: '', password: '' });
+    } catch (error) {
+      console.error('Login failed:', error.message);
+      setErrorMessage('Invalid email or password. Please try again.');
+    }
   };
 
   return (
@@ -60,6 +74,11 @@ export default function LoginCard() {
               required
             />
           </div>
+          {errorMessage && (
+            <div className="text-red-500 text-sm text-center">
+              {errorMessage}
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full">Login</Button>

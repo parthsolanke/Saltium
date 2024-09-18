@@ -3,13 +3,18 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function SignUpCard() {
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: ''
   });
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -19,12 +24,31 @@ export default function SignUpCard() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log('Form submitted:', formData);
-    // Reset form after submission
-    setFormData({ name: '', email: '', password: '' });
+    setErrorMessage('');
+    setIsSignUpSuccess(false);
+
+    if (formData.password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    try {
+      await axios.post(`${API_URL}/private/auth/register`, {
+        username: formData.email,
+        password: formData.password
+      });
+      setIsSignUpSuccess(true);
+      setFormData({ email: '', password: '' });
+    } catch (error) {
+      if (error.response && error.response.data.message === 'User already exists') {
+        setErrorMessage('A user with this email already exists. Please try logging in.');
+      } else {
+        console.error('Signup failed:', error.message);
+        setErrorMessage('Signup failed. Please try again.');
+      }
+    }
   };
 
   return (
@@ -36,32 +60,57 @@ export default function SignUpCard() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
-              name="email" 
-              type="email" 
-              placeholder="Enter your email" 
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="Enter your email"
               value={formData.email}
               onChange={handleInputChange}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              name="password" 
-              type="password" 
-              placeholder="Create a password" 
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+            </div>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Create a password (min 8 characters)"
               value={formData.password}
               onChange={handleInputChange}
               required
             />
           </div>
+
+          {errorMessage && (
+            <div className="text-red-500 text-sm text-center">
+              {errorMessage}
+            </div>
+          )}
+
+          {isSignUpSuccess && (
+            <div className="text-green-500 text-sm text-center">
+              Signup successful! You can now{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                login here
+              </Link>.
+            </div>
+          )}
         </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full">Sign Up</Button>
-        </CardFooter>
+        {!isSignUpSuccess && (
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full">Sign Up</Button>
+            <p className="text-sm text-center text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                Login
+              </Link>
+            </p>
+          </CardFooter>
+        )}
       </form>
     </Card>
   );
