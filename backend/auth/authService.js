@@ -31,7 +31,6 @@ exports.updateUserInfo = async (userId, updatedData) => {
     if (!user) {
         throw new Error('User not found');
     }
-    // const originalUser = { ...user.toObject() };
     if (updatedData.password) {
         updatedData.password = await bcrypt.hash(updatedData.password, 10);
     }
