@@ -94,7 +94,7 @@ export default function FileDownloadCard() {
         )}
 
         {downloadStatus === 'idle' && (
-          <Button onClick={simulateDownload} className="w-full bg-gray-900 hover:bg-gray-800 text-white">
+          <Button onClick={simulateDownload} className="w-full">
             <FileDown className="mr-2 h-4 w-4" />
             Download Zip
           </Button>
