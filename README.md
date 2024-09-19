@@ -1,5 +1,3 @@
-# ![img](./frontend/public/favicon.svg) Saltium
-
 <p align="center">
   <img src="./public/images/header.png" alt="header" width="400"/>
 </p>
