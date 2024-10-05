@@ -1,12 +1,12 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import LoginCard from '@/components/LoginForm';
+import FileDownloadCard from '@/components/DownloadForm';
 
-export default function RegisterPage() {
+export default function DownloadPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Header />
-      <LoginCard />
+      <FileDownloadCard />
       <Footer />
     </div>
   );

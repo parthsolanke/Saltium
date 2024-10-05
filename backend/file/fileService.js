@@ -40,6 +40,70 @@ const getDecryptedFileStream = async (file) => {
     };
 };
 
+const handleSingleFileDownload = async (file, res) => {
+    try {
+        const { fileStream, filename } = await getDecryptedFileStream(file);
+
+        setResponseHeaders(res, 'single', filename);
+
+        fileStream.pipe(res);
+
+        fileStream.on('end', async () => {
+            await cleanupAfterDownload([file]);
+        });
+
+        fileStream.on('error', (err) => {
+            res.status(500).json({ message: 'Error during file download' });
+            console.error('File Stream Error:', err.message);
+        });
+
+    } catch (error) {
+        throw new Error('Error during single file download: ' + error.message);
+    }
+};
+
+const handleMultipleFilesDownload = async (files, res) => {
+    try {
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        setResponseHeaders(res, 'multiple', 'files.zip');
+        archive.pipe(res);
+
+        for (const file of files) {
+            const { fileStream, filename } = await getDecryptedFileStream(file);
+            archive.append(fileStream, { name: filename });
+        }
+
+        archive.finalize().then(async () => {
+            await cleanupAfterDownload(files);
+        }).catch((err) => {
+            res.status(500).json({ message: 'Error during archiving' });
+            console.error('Archiving Error:', err.message);
+        });
+
+    } catch (error) {
+        throw new Error('Error during multiple file download: ' + error.message);
+    }
+};
+
+const setResponseHeaders = (res, type, filename) => {
+    if (type === 'single') {
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    } else if (type === 'multiple') {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+};
+
+const cleanupAfterDownload = async (files) => {
+    try {
+        await cleanupUploads(files);
+    } catch (error) {
+        console.error('Error during cleanup:', error.message);
+        throw new Error('Error cleaning up files after download');
+    }
+};
+
 exports.uploadFiles = async (files, user) => {
     try {
         const fileDataArray = [];
@@ -76,23 +140,11 @@ exports.downloadFilesWithToken = async (req, res) => {
         if (!files || files.length === 0) throw new Error('Files not found or unauthorized access.');
 
         if (files.length === 1) {
-            const { fileStream, filename } = await getDecryptedFileStream(files[0]);
-            cleanupUploads(files)
-            return { fileStream, filename, singleFile: true };
+            await handleSingleFileDownload(files[0], res);
+            return { singleFile: true };
         }
-        const archive = archiver('zip', { zlib: { level: 9 } });
 
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', 'attachment; filename=files.zip');
-
-        archive.pipe(res);
-
-        for (const file of files) {
-            const { fileStream, filename } = await getDecryptedFileStream(file);
-            archive.append(fileStream, { name: filename });
-            cleanupUploads(files)
-        }
-        await archive.finalize();
+        await handleMultipleFilesDownload(files, res);
         return { singleFile: false };
 
     } catch (error) {
