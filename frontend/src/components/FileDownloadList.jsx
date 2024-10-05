@@ -10,12 +10,12 @@ export default function FileDownloadList({ files }) {
           No files available for download.
         </div>
       ) : (
-        files.map((file, index) => {
+        files.map((file) => {
           return (
-            <div key={index} className="flex items-center justify-between py-2">
+            <div key={file._id} className="flex items-center justify-between py-2">
               <File className="h-5 w-5 text-gray-400 mr-2" />
-              <span className="text-sm text-gray-500 flex-grow">{file.name}</span>
-              {file.status === 'success' ? (
+              <span className="text-sm text-gray-500 flex-grow">{file.filename}</span>
+              {file.encrypted ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               ) : (
                 <XCircle className="h-4 w-4 text-red-500" />

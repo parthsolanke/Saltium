@@ -16,10 +16,10 @@ export default function GenerateLinkCard() {
 
   // useEffect to update uploaded files from state passed via router
   useEffect(() => {
-    if (location.state?.files) {
-      setUploadedFiles(location.state.files); // Set uploaded files from passed state
+    if (location.state?.fileDataArray) {
+      setUploadedFiles(location.state.fileDataArray); // Set uploaded files from passed state
     }
-  }, [location.state?.files]); // Dependency on files from location state
+  }, [location.state?.fileDataArray]); // Dependency on fileDataArray from location state
 
   const fetchGeneratedLink = async () => {
     setLoading(true);
