@@ -2,9 +2,11 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import FileUploadList from './FileUploadList';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function FileUploadCard() {
   const [files, setFiles] = useState([]);
@@ -21,22 +23,14 @@ export default function FileUploadCard() {
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const droppedFiles = Array.from(e.dataTransfer.files).map(file => ({
-      name: file.name,
-      size: file.size,
-      type: file.type
-    }));
+    const droppedFiles = Array.from(e.dataTransfer.files);
     setFiles(prevFiles => [...prevFiles, ...droppedFiles]);
     setWarning('');
   };
 
   const handleFileInput = (e) => {
     if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files).map(file => ({
-        name: file.name,
-        size: file.size,
-        type: file.type
-      }));
+      const selectedFiles = Array.from(e.target.files);
       setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
       setWarning('');
     }
@@ -50,17 +44,42 @@ export default function FileUploadCard() {
     fileInputRef.current?.click();
   };
 
-  // Mock API request function
-  const uploadFiles = async () => {
-    // Simulating an API request
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, message: 'Files uploaded successfully!' });
-      }, 2000);
+  const uploadFiles = async (files) => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
     });
+
+    try {
+      const response = await axios.post(`${API_URL}/private/files/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      if (error.response && error.response.data.message === "Invalid or expired token") {
+        localStorage.removeItem('token');
+        setWarning('Your session has expired. Please log in again.');
+        navigate('/login');
+      } else {
+        console.error('Error during file upload:', error);
+        throw error;
+      }
+    }
   };
 
   const handleUpload = async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setWarning('Please log in first.');
+      navigate('/login');
+      return;
+    }
+
     if (files.length === 0) {
       setWarning('Please select at least one file to upload.');
       return;
@@ -71,9 +90,10 @@ export default function FileUploadCard() {
 
     try {
       const result = await uploadFiles(files);
-      if (result.success) {
-        setFiles([]); // Clear the selected files
-        navigate('/generate-link', { state: { files } });  // Pass files to the next route
+      console.log('Upload result:', result);
+      if (result.fileDataArray) {
+        setFiles([]);
+        navigate('/generate-link', { state: { fileDataArray: result.fileDataArray } });
       }
     } catch {
       setWarning('An error occurred while uploading files. Please try again.');
@@ -111,9 +131,9 @@ export default function FileUploadCard() {
           </div>
         )}
         {warning && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertDescription>{warning}</AlertDescription>
-          </Alert>
+          <div className="mt-4 text-center text-red-500 text-sm">
+            {warning}
+          </div>
         )}
       </CardContent>
       <CardFooter>
