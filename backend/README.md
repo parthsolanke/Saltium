@@ -1,4 +1,4 @@
-### How run using Docker
+### Run using Docker
 1. **Build the Docker image**:
    ```bash
    docker build -t saltium-backend .
