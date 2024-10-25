@@ -9,7 +9,6 @@ Saltium is a secure file-sharing app that encrypts and protects your files with 
 - S3 support (only for signed in users)
 - P2P file share (no size-limits)
 - - Chunking and Resuming: Implement file chunking with the ability to resume downloads from the last successful chunk.
-- - Redundancy: Allow multiple peers to share the same file, increasing the chances of successful transfers.
 - - Error Checking: Use checksums or hashes to verify file integrity after transfer.
 - - Fallback Options: Consider implementing a fallback to a centralized server if P2P fails.
 - UDP to reduce latency in P2P (maybe)
