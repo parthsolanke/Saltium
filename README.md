@@ -1,10 +1,14 @@
-# 🧂 Saltium
-Saltium 🔐 is a secure file-sharing app that encrypts and protects your files with JWT-based access control. Easily upload 📤, encrypt 🔒, and share files, ensuring only authorized users can access download links. Features include token expiration ⏳ and link invalidation. Perfect for secure file sharing!
+<p align="center">
+  <img src="./public/images/header.png" alt="header" width="400"/>
+</p>
 
-## System Overview
-![System Overview](./frontend/public/Hsysfig.png)
 
-## System Design
-![System Design](./frontend/public/sysfig.png)
+Saltium is a secure file-sharing app that encrypts and protects your files with JWT-based access control. Easily upload, encrypt, and share files via download links. Features include token expiration and link invalidation.
 
-A secure file-sharing platform designed to protect your files with cutting-edge encryption and JWT-based access control. Easily upload, encrypt, and share files with confidence, knowing that only authorized users with valid JWT tokens can access your download links. With features like token expiration and link invalidation, Saltium ensures your file-sharing process is both secure and efficient. Perfect for developers and organizations looking to integrate secure file sharing into their applications.
+### To Add:
+- S3 support (only for signed in users)
+- P2P file share (no size-limits)
+- - Chunking and Resuming: Implement file chunking with the ability to resume downloads from the last successful chunk.
+- - Error Checking: Use checksums or hashes to verify file integrity after transfer.
+- - Fallback Options: Consider implementing a fallback to a centralized server if P2P fails.
+- UDP to reduce latency in P2P (maybe)

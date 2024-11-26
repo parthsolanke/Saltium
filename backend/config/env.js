@@ -1,8 +1,14 @@
 // config/env.js
 const dotenv = require('dotenv');
+const fs = require('fs');
 const path = require('path');
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+const envFilePath = path.resolve(__dirname, '../.env');
+if (fs.existsSync(envFilePath)) {
+    dotenv.config({ path: envFilePath });
+} else {
+    console.warn('No .env file found, using environment variables directly.');
+}
 
 const requiredEnv = [
     'PORT',

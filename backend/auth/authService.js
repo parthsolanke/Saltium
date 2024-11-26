@@ -4,13 +4,13 @@ const jwtUtils = require('../utils/jwtUtils');
 const bcrypt = require('bcrypt');
 
 exports.register = async (userData) => {
-    const { username, password, email } = userData;
+    const { username, password } = userData;
     const existingUser = await User.findOne({ username });
     if (existingUser) {
         throw new Error('User already exists');
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, password: hashedPassword, email });
+    const user = new User({ username, password: hashedPassword });
     const savedUser = await user.save();
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
     return userWithoutPassword;
@@ -31,7 +31,6 @@ exports.updateUserInfo = async (userId, updatedData) => {
     if (!user) {
         throw new Error('User not found');
     }
-    const originalUser = { ...user.toObject() };
     if (updatedData.password) {
         updatedData.password = await bcrypt.hash(updatedData.password, 10);
     }
