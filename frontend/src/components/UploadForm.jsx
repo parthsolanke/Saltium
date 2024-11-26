@@ -1,19 +1,12 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
+import PropTypes from 'prop-types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload } from 'lucide-react';
-import { useNavigate } from "react-router-dom";
 import FileUploadList from './FileUploadList';
-import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export default function FileUploadCard() {
-  const [files, setFiles] = useState([]);
-  const [warning, setWarning] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+export default function FileUploadCard({ files, warning, isUploading, onFilesAdded, onFileRemove, onUpload }) {
   const fileInputRef = useRef(null);
-  const navigate = useNavigate();
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -23,83 +16,17 @@ export default function FileUploadCard() {
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles(prevFiles => [...prevFiles, ...droppedFiles]);
-    setWarning('');
+    onFilesAdded(e.dataTransfer.files);
   };
 
   const handleFileInput = (e) => {
     if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
-      setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
-      setWarning('');
+      onFilesAdded(e.target.files);
     }
-  };
-
-  const removeFile = (fileToRemove) => {
-    setFiles(files.filter(file => file.name !== fileToRemove.name));
   };
 
   const openFileDialog = () => {
     fileInputRef.current?.click();
-  };
-
-  const uploadFiles = async (files) => {
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('files', file);
-    });
-
-    try {
-      const response = await axios.post(`${API_URL}/private/files/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      return response.data;
-    } catch (error) {
-      if (error.response && error.response.data.message === "Invalid or expired token") {
-        localStorage.removeItem('token');
-        setWarning('Your session has expired. Please log in again.');
-        navigate('/login');
-      } else {
-        console.error('Error during file upload:', error);
-        throw error;
-      }
-    }
-  };
-
-  const handleUpload = async () => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      setWarning('Please log in first.');
-      navigate('/login');
-      return;
-    }
-
-    if (files.length === 0) {
-      setWarning('Please select at least one file to upload.');
-      return;
-    }
-
-    setIsUploading(true);
-    setWarning('');
-
-    try {
-      const result = await uploadFiles(files);
-      console.log('Upload result:', result);
-      if (result.fileDataArray) {
-        setFiles([]);
-        navigate('/generate-link', { state: { fileDataArray: result.fileDataArray } });
-      }
-    } catch {
-      setWarning('An error occurred while uploading files. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   return (
@@ -127,7 +54,7 @@ export default function FileUploadCard() {
         {files.length > 0 && (
           <div className="mt-4">
             <h3 className="text-sm font-medium text-gray-900 mb-2">Selected files:</h3>
-            <FileUploadList files={files} onRemove={removeFile} />
+            <FileUploadList files={files} onRemove={onFileRemove} />
           </div>
         )}
         {warning && (
@@ -137,10 +64,19 @@ export default function FileUploadCard() {
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleUpload} className="w-full" disabled={isUploading}>
+        <Button onClick={onUpload} className="w-full" disabled={isUploading}>
           {isUploading ? 'Uploading...' : 'Upload Files'}
         </Button>
       </CardFooter>
     </Card>
   );
 }
+
+FileUploadCard.propTypes = {
+  files: PropTypes.array.isRequired,
+  warning: PropTypes.string.isRequired,
+  isUploading: PropTypes.bool.isRequired,
+  onFilesAdded: PropTypes.func.isRequired,
+  onFileRemove: PropTypes.func.isRequired,
+  onUpload: PropTypes.func.isRequired
+};
