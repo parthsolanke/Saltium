@@ -2,6 +2,7 @@
 const fileService = require('./fileService');
 const jwtUtils = require('../utils/jwtUtils');
 const File = require('../models/File');
+const { sanitizeFileResponse } = require('../utils/responseUtils');
 
 exports.uploadFiles = async (req, res, next) => {
     try {
@@ -9,7 +10,12 @@ exports.uploadFiles = async (req, res, next) => {
             return res.status(400).json({ message: 'No files uploaded.' });
         }
         const fileDataArray = await fileService.uploadFiles(req.files, req.user);
-        res.status(201).json({ message: 'Files uploaded', fileDataArray });
+        const sanitizedFiles = fileDataArray.map(sanitizeFileResponse);
+        
+        res.status(201).json({ 
+            message: 'Files uploaded successfully', 
+            files: sanitizedFiles 
+        });
     } catch (error) {
         next(error);
     }

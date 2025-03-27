@@ -43,6 +43,7 @@ const getDecryptedFileStream = async (file) => {
 const handleSingleFileDownload = async (file, res) => {
     let fileStream;
     try {
+        await File.findByIdAndUpdate(file._id, { lastAccessed: new Date() });
         const { fileStream: stream, filename } = await getDecryptedFileStream(file);
         fileStream = stream;
 
@@ -73,6 +74,10 @@ const handleMultipleFilesDownload = async (files, res) => {
     const archive = archiver('zip', { zlib: { level: 9 } });
     
     try {
+        await Promise.all(files.map(file => 
+            File.findByIdAndUpdate(file._id, { lastAccessed: new Date() })
+        ));
+        
         if (res.headersSent) return;
         
         setResponseHeaders(res, 'multiple', 'files.zip');
