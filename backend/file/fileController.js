@@ -38,17 +38,17 @@ exports.generateDownloadLink = async (req, res, next) => {
 
 exports.downloadFile = async (req, res, next) => {
     try {
-        const downloadResult = await fileService.downloadFilesWithToken(req, res);
-
-        if (downloadResult.singleFile) {
-            const { fileStream, filename } = downloadResult;
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-            fileStream.pipe(res);
-        }
+        await fileService.downloadFilesWithToken(req, res);
         
+        res.on('error', (error) => {
+            console.error('Response error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ message: 'Download stream error' });
+            }
+        });
     } catch (error) {
         if (!res.headersSent) {
-            res.status(500).json({ message: error.message || 'File download failed' });
+            res.status(500).json({ message: 'File download failed' });
         }
         next(error);
     }

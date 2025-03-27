@@ -41,47 +41,64 @@ const getDecryptedFileStream = async (file) => {
 };
 
 const handleSingleFileDownload = async (file, res) => {
+    let fileStream;
     try {
-        const { fileStream, filename } = await getDecryptedFileStream(file);
+        const { fileStream: stream, filename } = await getDecryptedFileStream(file);
+        fileStream = stream;
 
+        if (res.headersSent) return;
+        
         setResponseHeaders(res, 'single', filename);
 
-        fileStream.pipe(res);
+        await new Promise((resolve, reject) => {
+            fileStream.on('error', (err) => {
+                reject(new Error('File stream error: ' + err.message));
+            });
 
-        fileStream.on('end', async () => {
-            await cleanupAfterDownload([file]);
-        });
+            res.on('finish', async () => {
+                await cleanupAfterDownload([file]);
+                resolve();
+            });
 
-        fileStream.on('error', (err) => {
-            res.status(500).json({ message: 'Error during file download' });
-            console.error('File Stream Error:', err.message);
+            fileStream.pipe(res);
         });
 
     } catch (error) {
+        if (fileStream) fileStream.destroy();
         throw new Error('Error during single file download: ' + error.message);
     }
 };
 
 const handleMultipleFilesDownload = async (files, res) => {
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
     try {
-        const archive = archiver('zip', { zlib: { level: 9 } });
-
+        if (res.headersSent) return;
+        
         setResponseHeaders(res, 'multiple', 'files.zip');
-        archive.pipe(res);
 
-        for (const file of files) {
-            const { fileStream, filename } = await getDecryptedFileStream(file);
-            archive.append(fileStream, { name: filename });
-        }
+        return new Promise(async (resolve, reject) => {
+            archive.on('error', (err) => {
+                reject(new Error('Archive error: ' + err.message));
+            });
 
-        archive.finalize().then(async () => {
-            await cleanupAfterDownload(files);
-        }).catch((err) => {
-            res.status(500).json({ message: 'Error during archiving' });
-            console.error('Archiving Error:', err.message);
+            archive.on('end', async () => {
+                await cleanupAfterDownload(files);
+                resolve();
+            });
+
+            archive.pipe(res);
+
+            for (const file of files) {
+                const { fileStream, filename } = await getDecryptedFileStream(file);
+                archive.append(fileStream, { name: filename });
+            }
+
+            await archive.finalize();
         });
 
     } catch (error) {
+        archive.abort();
         throw new Error('Error during multiple file download: ' + error.message);
     }
 };
@@ -141,11 +158,9 @@ exports.downloadFilesWithToken = async (req, res) => {
 
         if (files.length === 1) {
             await handleSingleFileDownload(files[0], res);
-            return { singleFile: true };
+        } else {
+            await handleMultipleFilesDownload(files, res);
         }
-
-        await handleMultipleFilesDownload(files, res);
-        return { singleFile: false };
 
     } catch (error) {
         throw new Error(error.message || 'Error during file download');

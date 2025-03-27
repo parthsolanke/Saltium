@@ -27,6 +27,19 @@ app.use('/api/v1/private', apiLimiter, privateRouter);
 
 app.use(errorHandler);
 
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', error);
+    // Graceful shutdown
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (error) => {
+    logger.error('Unhandled Rejection:', error);
+    // Graceful shutdown
+    process.exit(1);
+});
+
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
 });
