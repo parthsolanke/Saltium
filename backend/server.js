@@ -13,7 +13,12 @@ const logger = require('./config/logger');
 const app = express();
 const PORT = env.port;
 
-app.use(cors());
+const corsOption = {
+    origin: env.allowedOrigins,
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOption));
 app.use(morgan('tiny', { stream: logger.stream }));
 app.use(express.json());
 

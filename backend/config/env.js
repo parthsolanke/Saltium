@@ -18,6 +18,7 @@ const requiredEnv = [
     'SECRET_KEY',
     'JWT_EXPIRATION',
     'MAX_FILE_SIZE',
+    'ALLOWED_ORIGINS',
 ];
 
 const missingEnv = requiredEnv.filter((envVar) => !process.env[envVar]);
@@ -34,4 +35,5 @@ module.exports = {
     secretKey: process.env.SECRET_KEY,
     jwtExpiration: process.env.JWT_EXPIRATION,
     maxFileSize: process.env.MAX_FILE_SIZE,
+    allowedOrigins: process.env.ALLOWED_ORIGINS,
 };
