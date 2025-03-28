@@ -12,6 +12,16 @@ exports.verifyToken = (token) => {
     return jwt.verify(token, env.jwtSecret);
 };
 
-exports.generateFileDownloadToken = (payload) => {
-    return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiration });
+exports.generateFileDownloadToken = ({ userId, files }) => {
+    // Transform files array to have shorter property names
+    const f = files.map(file => ({
+        i: file.id,        // 'i' instead of 'id'
+        n: file.name       // 'n' instead of 'name'
+    }));
+
+    return jwt.sign(
+        { u: userId, f },  // 'u' instead of 'userId', 'f' instead of 'files'
+        env.jwtSecret,
+        { expiresIn: '1h' }
+    );
 };

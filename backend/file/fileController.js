@@ -28,15 +28,23 @@ exports.generateDownloadLink = async (req, res, next) => {
             return res.status(400).json({ message: 'No file IDs provided' });
         }
 
-        const files = await File.find({ _id: { $in: fileIds }, uploadedBy: req.user.id });
+        const files = await File.find({ _id: { $in: fileIds }, uploadedBy: req.user.id })
+            .select('_id filename');
+            
         if (files.length !== fileIds.length) {
             return res.status(404).json({ message: 'Some files not found or not authorized' });
         }
 
-        const downloadToken = jwtUtils.generateFileDownloadToken({ fileIds, userId: req.user.id });
-        const downloadLink = `${req.protocol}://${req.get('host')}/api/v1/private/files/download?token=${downloadToken}`;
+        const fileInfo = files.map(f => ({ id: f._id, name: f.filename }));
+        const downloadToken = jwtUtils.generateFileDownloadToken({ 
+            userId: req.user.id,
+            files: fileInfo
+        });
 
-        res.status(200).json({ downloadLink, message: 'Download link generated successfully' });
+        res.status(200).json({ 
+            token: downloadToken,
+            expiresIn: 3600
+        });
     } catch (error) {
         next(error);
     }
@@ -44,6 +52,8 @@ exports.generateDownloadLink = async (req, res, next) => {
 
 exports.downloadFile = async (req, res, next) => {
     try {
+        // Extract fileIds from files array in token
+        req.fileIds = req.files.map(file => file.id);
         await fileService.downloadFilesWithToken(req, res);
         
         res.on('error', (error) => {

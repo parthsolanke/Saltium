@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 
 const fileSchema = new mongoose.Schema({
     filename: { type: String, required: true },
-    filePath: { type: String, required: true },
+    s3Key: { type: String, required: true },
+    s3Location: { type: String, required: true },
     fileHash: { type: String, required: true, unique: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     encrypted: { type: Boolean, required: true },

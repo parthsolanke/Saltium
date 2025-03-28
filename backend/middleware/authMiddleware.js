@@ -14,19 +14,23 @@ exports.authMiddleware = (req, res, next) => {
     }
 };
 
-exports.downloadAuthMiddleware = (req, res, next) => {
-    const token = req.query.token;
-    if (!token) {
-        return res.status(400).json({ message: 'Missing download token' });
-    }
-
+exports.downloadAuthMiddleware = async (req, res, next) => {
     try {
+        const token = req.query.token;
+        if (!token) {
+            return res.status(401).json({ message: 'Download token is required' });
+        }
+
         const decoded = jwtUtils.verifyToken(token);
-        const { fileIds, userId } = decoded;
-        req.fileIds = fileIds;
-        req.userId = userId;
+        // Transform shortened names back to full names
+        req.userId = decoded.u;
+        req.files = decoded.f.map(file => ({
+            id: file.i,
+            name: file.n
+        }));
+        req.fileIds = decoded.f.map(file => file.i);
         next();
     } catch (error) {
-        res.status(401).json({ message: 'Invalid or expired files token' });
+        res.status(401).json({ message: 'Invalid or expired download token' });
     }
-}
+};

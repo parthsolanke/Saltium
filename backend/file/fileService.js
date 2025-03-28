@@ -1,18 +1,17 @@
 // file/fileService.js
-const fs = require('fs');
-const path = require('path');
 const archiver = require('archiver');
-const { Readable } = require('stream');
 const File = require('../models/File');
 const logger = require('../config/logger');
 const cryptoUtils = require('../utils/cryptoUtils');
-const { cleanupUploads } = require('../utils/cleanupUtils')
 const fileUtils = require('../utils/fileUtils')
+const { uploadToS3, getS3Stream, deleteFromS3 } = require('../utils/s3Service');
+const { Readable } = require('stream');
 
-const createFileRecord = async (file, filePath, userId) => {
+const createFileRecord = async (file, s3Data, userId) => {
     const fileData = new File({
         filename: fileUtils.sanitize(file.originalname),
-        filePath,
+        s3Key: s3Data.key,
+        s3Location: s3Data.location,
         fileHash: fileUtils.generateFileHash(file.buffer),
         uploadedBy: userId,
         encrypted: true,
@@ -31,13 +30,22 @@ const createFileRecord = async (file, filePath, userId) => {
 };
 
 const getDecryptedFileStream = async (file) => {
-    const fileBuffer = fs.readFileSync(file.filePath);
-    const decryptedBuffer = await cryptoUtils.decryptFile(fileBuffer);
-    const fileStream = Readable.from(decryptedBuffer);
-    return {
-        fileStream,
-        filename: file.filename
-    };
+    try {
+        const s3Stream = await getS3Stream(file.s3Key);
+        const chunks = [];
+        for await (const chunk of s3Stream) {
+            chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        
+        const decryptedBuffer = cryptoUtils.decryptFile(buffer);
+        return {
+            fileStream: Readable.from(decryptedBuffer),
+            filename: file.filename
+        };
+    } catch (error) {
+        throw new Error(`Failed to get decrypted stream: ${error.message}`);
+    }
 };
 
 const handleSingleFileDownload = async (file, res) => {
@@ -119,9 +127,13 @@ const setResponseHeaders = (res, type, filename) => {
 
 const cleanupAfterDownload = async (files) => {
     try {
-        await cleanupUploads(files);
+        for (const file of files) {
+            await deleteFromS3(file.s3Key);
+            await File.deleteOne({ _id: file._id });
+            logger.info(`Cleaned up file after download: ${file.filename}`);
+        }
     } catch (error) {
-        console.error('Error during cleanup:', error.message);
+        logger.error('Error during cleanup:', error);
         throw new Error('Error cleaning up files after download');
     }
 };
@@ -129,23 +141,22 @@ const cleanupAfterDownload = async (files) => {
 exports.uploadFiles = async (files, user) => {
     try {
         const fileDataArray = [];
-        const uploadsDir = fileUtils.ensureUploadsDirExists();
 
         for (const file of files) {
             const fileHash = fileUtils.generateFileHash(file.buffer, user.id);
             const existingFile = await File.findOne({ fileHash, uploadedBy: user.id });
 
             if (existingFile) {
-                logger.info(`File ${file.originalname} with hash ${fileHash} already exists for user ${user.id}.`);
+                logger.info(`File ${file.originalname} already exists for user ${user.id}`);
                 fileDataArray.push(existingFile);
                 continue;
             }
 
-            const filePath = path.join(uploadsDir, `${fileHash}-${fileUtils.sanitize(file.originalname)}`);
-            const bufferToSave = cryptoUtils.encryptFile(file.buffer);
-            fileUtils.saveFileToDisk(filePath, bufferToSave);
-
-            const fileData = await createFileRecord(file, filePath, user.id);
+            const encryptedBuffer = cryptoUtils.encryptFile(file.buffer);
+            const s3Key = `${user.id}/${fileHash}-${fileUtils.sanitize(file.originalname)}`;
+            const s3Location = await uploadToS3(encryptedBuffer, s3Key);
+            
+            const fileData = await createFileRecord(file, { key: s3Key, location: s3Location }, user.id);
             fileDataArray.push(fileData);
         }
 
