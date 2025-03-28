@@ -13,7 +13,7 @@ router.post('/upload',
     scanForMalware,
     fileController.uploadFiles
 );
-router.post('/generate-link', fileController.generateDownloadLink);
+router.post('/generate-token', fileController.generateDownloadLink);
 router.get('/download', downloadAuthMiddleware, fileController.downloadFile);
 
 module.exports = router;

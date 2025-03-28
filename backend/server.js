@@ -9,13 +9,21 @@ const privateRouter = require('./config/privateRouter')
 const publicRouter = require('./config/publicRouter')
 const env = require('./config/env');
 const logger = require('./config/logger');
+const { initCleanupJob } = require('./utils/cleanupJob');
 
 const app = express();
 const PORT = env.port;
 
-app.use(cors());
+const corsOption = {
+    origin: env.allowedOrigins,
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOption));
 app.use(morgan('tiny', { stream: logger.stream }));
 app.use(express.json());
+
+initCleanupJob();
 
 app.use('/api/v1/private', apiLimiter, privateRouter);
 // app.use('/api/v1/public', apiLimiter, publicRouter);
