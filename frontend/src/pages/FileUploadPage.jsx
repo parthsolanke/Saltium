@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FileUploadCard from '@/components/UploadForm';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { handleApiError } from '@/utils/errorUtils';
 
 export default function UploadPage() {
   const navigate = useNavigate();
@@ -20,6 +21,26 @@ export default function UploadPage() {
 
   const handleFilesAdded = (newFiles) => {
     addFiles(Array.from(newFiles));
+  };
+
+  const handleP2PShare = async () => {
+    if (files.length === 0) {
+      setWarning('Please select at least one file to share.');
+      return;
+    }
+    setWarning('');
+
+    try {
+      const { fileDataArray } = await uploadFiles();
+      setFiles([]);
+      navigate('/p2p-share', { state: { fileDataArray } });
+    } catch (error) {
+      const errorInfo = handleApiError(error);
+      if (errorInfo.shouldRedirect) {
+        navigate(errorInfo.redirectTo);
+      }
+      setWarning(errorInfo.message);
+    }
   };
 
   const handleUpload = async () => {
@@ -40,19 +61,15 @@ export default function UploadPage() {
     setWarning('');
 
     try {
-      const result = await uploadFiles();
-      if (result.fileDataArray) {
-        setFiles([]);
-        navigate('/generate-link', { state: { fileDataArray: result.fileDataArray } });
-      }
+      const { fileDataArray } = await uploadFiles();
+      setFiles([]);
+      navigate('/generate-link', { state: { fileDataArray } });
     } catch (error) {
-      if (error.response?.data.message === "Invalid or expired token") {
-        localStorage.removeItem('token');
-        setWarning('Your session has expired. Please log in again.');
-        navigate('/login');
-      } else {
-        setWarning('An error occurred while uploading files. Please try again.');
+      const errorInfo = handleApiError(error);
+      if (errorInfo.shouldRedirect) {
+        navigate(errorInfo.redirectTo);
       }
+      setWarning(errorInfo.message);
     } finally {
       setIsUploading(false);
     }
@@ -68,6 +85,7 @@ export default function UploadPage() {
         onFilesAdded={handleFilesAdded}
         onFileRemove={removeFile}
         onUpload={handleUpload}
+        onP2PShare={handleP2PShare}
       />
       <Footer />
     </div>

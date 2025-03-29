@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import GenerateLinkCard from '@/components/GenerateLink';
+import { handleApiError } from '@/utils/errorUtils';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function GenerateLinkPage() {
     const [link, setLink] = useState('');
@@ -10,8 +14,10 @@ export default function GenerateLinkPage() {
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showGenerateButton, setShowGenerateButton] = useState(true);
+    const [warning, setWarning] = useState('');
     
     const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (location.state?.fileDataArray) {
@@ -19,16 +25,34 @@ export default function GenerateLinkPage() {
         }
     }, [location.state?.fileDataArray]);
 
+    const generateDownloadUrl = (token) => {
+        const origin = window.location.origin;
+        return `${origin}/download?token=${token}`;
+    };
+
     const fetchGeneratedLink = async () => {
         setLoading(true);
         try {
-            const response = await new Promise((resolve) => {
-                setTimeout(() => resolve({ data: `https://example.com/share/${Math.random().toString(36).substr(2, 9)}` }), 1000);
-            });
-            setLink(response.data);
+            const fileIds = uploadedFiles.map(file => file.id);
+            const response = await axios.post(
+                `${API_URL}/private/files/generate-token`,
+                { fileIds },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                }
+            );
+            
+            const downloadUrl = generateDownloadUrl(response.data.token);
+            setLink(downloadUrl);
             setShowGenerateButton(false);
         } catch (error) {
-            console.error('Error generating link:', error);
+            const errorInfo = handleApiError(error);
+            if (errorInfo.shouldRedirect) {
+                navigate(errorInfo.redirectTo);
+            }
+            setWarning(errorInfo.message);
         } finally {
             setLoading(false);
         }
@@ -52,6 +76,7 @@ export default function GenerateLinkPage() {
                 copied={copied}
                 uploadedFiles={uploadedFiles}
                 loading={loading}
+                warning={warning}
                 showGenerateButton={showGenerateButton}
                 onGenerateLink={fetchGeneratedLink}
                 onCopyLink={copyToClipboard}

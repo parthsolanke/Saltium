@@ -53,9 +53,13 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			}
-  		}
+  		},
+      animation: {
+        'wiggle': 'wiggle 0.3s ease-in-out',
+        'wiggle-once': 'wiggle 0.3s ease-in-out',
+      },
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [import("tailwindcss-animate")],
 }
 

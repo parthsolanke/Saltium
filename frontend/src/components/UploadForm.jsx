@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Upload } from 'lucide-react';
 import FileUploadList from './FileUploadList';
 
-export default function FileUploadCard({ files, warning, isUploading, onFilesAdded, onFileRemove, onUpload }) {
+export default function FileUploadCard({ files, warning, isUploading, onFilesAdded, onFileRemove, onUpload, onP2PShare }) {
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -63,9 +63,20 @@ export default function FileUploadCard({ files, warning, isUploading, onFilesAdd
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        <Button onClick={onUpload} className="w-full" disabled={isUploading}>
-          {isUploading ? 'Uploading...' : 'Upload Files'}
+      <CardFooter className="flex flex-row gap-2">
+        <Button 
+          className="w-full bg-black text-white hover:bg-black/90"
+          disabled={isUploading}
+          onClick={onP2PShare}
+        >
+          P2P Share
+        </Button>
+        <Button 
+          onClick={onUpload} 
+          className="w-full bg-black text-white hover:bg-black/90" 
+          disabled={isUploading}
+        >
+          {isUploading ? 'Uploading...' : 'Cloud Share'}
         </Button>
       </CardFooter>
     </Card>
@@ -78,5 +89,6 @@ FileUploadCard.propTypes = {
   isUploading: PropTypes.bool.isRequired,
   onFilesAdded: PropTypes.func.isRequired,
   onFileRemove: PropTypes.func.isRequired,
-  onUpload: PropTypes.func.isRequired
+  onUpload: PropTypes.func.isRequired,
+  onP2PShare: PropTypes.func.isRequired,
 };
