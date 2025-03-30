@@ -52,20 +52,24 @@ exports.generateDownloadLink = async (req, res, next) => {
 
 exports.downloadFile = async (req, res, next) => {
     try {
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+            return res.status(404).json({ message: 'Files not found or download token expired' });
+        }
+
         // Extract fileIds from files array in token
         req.fileIds = req.files.map(file => file.id);
-        await fileService.downloadFilesWithToken(req, res);
         
-        res.on('error', (error) => {
-            console.error('Response error:', error);
-            if (!res.headersSent) {
-                res.status(500).json({ message: 'Download stream error' });
-            }
-        });
-    } catch (error) {
-        if (!res.headersSent) {
-            res.status(500).json({ message: 'File download failed' });
+        // Handle errors that might occur during download
+        const result = await fileService.downloadFilesWithToken(req, res);
+        if (result?.error) {
+            return res.status(result.status).json({ message: result.message });
         }
-        next(error);
+
+    } catch (error) {
+        // Only send error response if headers haven't been sent
+        if (!res.headersSent) {
+            const status = error.status || 500;
+            res.status(status).json({ message: error.message || 'File download failed' });
+        }
     }
 };

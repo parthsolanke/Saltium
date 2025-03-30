@@ -49,17 +49,23 @@ const getDecryptedFileStream = async (file) => {
 };
 
 const handleSingleFileDownload = async (file, res) => {
+    if (!file) {
+        const error = new Error('File not found');
+        error.status = 404;
+        throw error;
+    }
+
     let fileStream;
     try {
         await File.findByIdAndUpdate(file._id, { lastAccessed: new Date() });
         const { fileStream: stream, filename } = await getDecryptedFileStream(file);
         fileStream = stream;
 
-        if (res.headersSent) return;
-        
-        setResponseHeaders(res, 'single', filename);
+        if (!res.headersSent) {
+            setResponseHeaders(res, 'single', filename);
+        }
 
-        await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             fileStream.on('error', (err) => {
                 reject(new Error('File stream error: ' + err.message));
             });
@@ -74,7 +80,7 @@ const handleSingleFileDownload = async (file, res) => {
 
     } catch (error) {
         if (fileStream) fileStream.destroy();
-        throw new Error('Error during single file download: ' + error.message);
+        throw error;
     }
 };
 
@@ -170,15 +176,33 @@ exports.uploadFiles = async (files, user) => {
 exports.downloadFilesWithToken = async (req, res) => {
     try {
         const files = await File.find({ _id: { $in: req.fileIds }, uploadedBy: req.userId });
-        if (!files || files.length === 0) throw new Error('Files not found or unauthorized access.');
+        
+        if (!files || files.length === 0) {
+            return {
+                error: true,
+                status: 404,
+                message: 'Files not found or unauthorized access'
+            };
+        }
 
+        // Start the download before any potential cleanup
         if (files.length === 1) {
             await handleSingleFileDownload(files[0], res);
         } else {
             await handleMultipleFilesDownload(files, res);
         }
 
+        return null; // Successful download, no error
+
     } catch (error) {
-        throw new Error(error.message || 'Error during file download');
+        if (!res.headersSent) {
+            return {
+                error: true,
+                status: error.status || 500,
+                message: error.message || 'Error during file download'
+            };
+        }
+        logger.error('Error after headers sent:', error);
+        return null;
     }
 };

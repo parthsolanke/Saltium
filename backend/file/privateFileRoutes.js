@@ -16,4 +16,15 @@ router.post('/upload',
 router.post('/generate-token', fileController.generateDownloadLink);
 router.get('/download', downloadAuthMiddleware, fileController.downloadFile);
 
+router.use((err, req, res, next) => {
+    if (res.headersSent) {
+        return next(err);
+    }
+    
+    const status = err.status || 500;
+    const message = err.message || 'An unexpected error occurred';
+    
+    res.status(status).json({ message });
+});
+
 module.exports = router;
