@@ -26,7 +26,7 @@ export default function LoginPage() {
         password: formData.password
       });
       localStorage.setItem('token', response.data.token);
-      navigate('/upload');
+      navigate('/');
       setFormData({ email: '', password: '' });
     } catch (error) {
       console.error('Login failed:', error.message);

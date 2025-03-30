@@ -9,7 +9,7 @@ export default function NotFoundPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Header />
-        <Card className="w-full max-w-md mx-auto bg-slate-50">
+        <Card className="w-full max-w-md mx-auto bg-stone-50">
         <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">404 - Page Not Found</CardTitle>
         </CardHeader>
@@ -23,7 +23,7 @@ export default function NotFoundPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
             <Button asChild>
-            <Link to="/upload">
+            <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Upload
             </Link>

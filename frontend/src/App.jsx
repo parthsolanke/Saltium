@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage';
 import UploadPage from './pages/FileUploadPage';
@@ -11,9 +11,10 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<UploadPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<RegisterPage />} />
-          <Route path="/upload" element={<UploadPage />} />
+          <Route path="/upload" element={<Navigate to="/" replace />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/generate-link" element={<GenerateLinkPage />} />
           <Route path="*" element={<NotFoundPage />} />

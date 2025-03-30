@@ -30,7 +30,7 @@ export default function FileUploadCard({ files, warning, isUploading, onFilesAdd
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-slate-50">
+    <Card className="w-full max-w-md mx-auto bg-stone-50">
       <CardContent className="pt-6">
         <div
           onDragOver={handleDragOver}

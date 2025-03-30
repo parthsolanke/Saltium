@@ -51,6 +51,21 @@ export const handleApiError = (error) => {
       }
     }
 
+    // Add download-specific error handling
+    if (status === 400 && data.message?.includes('Invalid download token')) {
+      return {
+        message: 'This download link is invalid or has expired',
+        shouldRedirect: false
+      };
+    }
+
+    if (status === 404 && data.message?.includes('Files not found')) {
+      return {
+        message: 'The requested files are no longer available',
+        shouldRedirect: false
+      };
+    }
+
     // Validation errors (Zod errors from backend)
     if (status === 400 && data.message?.length > 0) {
       if (Array.isArray(data.message)) {

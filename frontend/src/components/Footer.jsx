@@ -11,7 +11,7 @@ export default function Footer() {
         </p>
         <Button variant="ghost" size="sm" asChild>
           <a
-            href="https://github.com/parthsolanke"
+            href="https://github.com/parthsolanke/Saltium"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"

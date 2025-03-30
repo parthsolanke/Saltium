@@ -22,7 +22,7 @@ export default function FileDownloadCard({
   onDownload = () => {} 
 }) {
   return (
-    <Card className="w-full max-w-md mx-auto bg-slate-50">
+    <Card className="w-full max-w-md mx-auto bg-stone-50">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Download Files</CardTitle>
       </CardHeader>

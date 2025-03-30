@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 export default function SignUpCard({ formData, errorMessage, isSignUpSuccess, onInputChange, onSubmit }) {
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto bg-stone-50">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Sign Up</CardTitle>
       </CardHeader>

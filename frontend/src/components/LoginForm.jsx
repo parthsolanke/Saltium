@@ -7,7 +7,7 @@ import PropTypes from 'prop-types';
 
 export default function LoginCard({ formData, errorMessage, onInputChange, onSubmit }) {
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto bg-stone-50">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
       </CardHeader>
