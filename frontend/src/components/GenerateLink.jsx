@@ -32,7 +32,7 @@ export default function GenerateLinkCard({
     };
 
     return (
-        <Card className="w-full max-w-md mx-auto relative">
+        <Card className="w-full max-w-md mx-auto relative bg-slate-50">
             <CardHeader>
                 <FileDownloadList files={uploadedFiles} />
             </CardHeader>
@@ -73,7 +73,7 @@ export default function GenerateLinkCard({
                         </div>
 
                         {showQR && (
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg border z-10">
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-50 p-6 rounded-lg shadow-lg border z-10">
                                 <div className="space-y-4">
                                     <div className="flex justify-end">
                                         <Button

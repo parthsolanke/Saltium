@@ -20,6 +20,10 @@ export default function UploadPage() {
   } = useFileUpload();
 
   const handleFilesAdded = (newFiles) => {
+    if (files.length + newFiles.length > 10) {
+      setWarning('Cannot upload more than 10 files at once.');
+      return;
+    }
     addFiles(Array.from(newFiles));
   };
 
@@ -29,18 +33,9 @@ export default function UploadPage() {
       return;
     }
     setWarning('');
-
-    try {
-      const { fileDataArray } = await uploadFiles();
-      setFiles([]);
-      navigate('/p2p-share', { state: { fileDataArray } });
-    } catch (error) {
-      const errorInfo = handleApiError(error);
-      if (errorInfo.shouldRedirect) {
-        navigate(errorInfo.redirectTo);
-      }
-      setWarning(errorInfo.message);
-    }
+    
+    // TODO: Implement actual P2P sharing logic
+    setWarning('P2P sharing is not yet implemented');
   };
 
   const handleUpload = async () => {
@@ -61,10 +56,14 @@ export default function UploadPage() {
     setWarning('');
 
     try {
+      if (files.length > 10) {
+        throw new Error('Cannot upload more than 10 files at once.');
+      }
       const { fileDataArray } = await uploadFiles();
       setFiles([]);
       navigate('/generate-link', { state: { fileDataArray } });
     } catch (error) {
+      setIsUploading(false); // Reset uploading state immediately on error
       const errorInfo = handleApiError(error);
       if (errorInfo.shouldRedirect) {
         navigate(errorInfo.redirectTo);

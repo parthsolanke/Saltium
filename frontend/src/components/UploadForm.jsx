@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload } from 'lucide-react';
 import FileUploadList from './FileUploadList';
@@ -30,11 +30,8 @@ export default function FileUploadCard({ files, warning, isUploading, onFilesAdd
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">Upload Files</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="w-full max-w-md mx-auto bg-slate-50">
+      <CardContent className="pt-6">
         <div
           onDragOver={handleDragOver}
           onDrop={handleDrop}

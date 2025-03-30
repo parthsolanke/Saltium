@@ -7,6 +7,7 @@ const fileUtils = require('../utils/fileUtils');
 exports.uploadMulter = multer({
     limits: {
         fileSize: parseInt(env.maxFileSize) * 1024 * 1024,
+        files: 10
     },
     fileFilter: (req, file, cb) => {
         cb(null, true);
