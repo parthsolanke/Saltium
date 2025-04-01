@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const fileController = require('./fileController');
-const { downloadAuthMiddleware } = require('../middleware/authMiddleware');
 const { uploadMulter, handleMulterError, scanForMalware } = require('../middleware/uploadMiddleware');
 const { checkDiskSpaceMiddleware } = require('../middleware/diskSpaceMiddleware');
 
@@ -14,7 +13,6 @@ router.post('/upload',
     fileController.uploadFiles
 );
 router.post('/generate-token', fileController.generateDownloadLink);
-router.get('/download', downloadAuthMiddleware, fileController.downloadFile);
 
 router.use((err, req, res, next) => {
     if (res.headersSent) {

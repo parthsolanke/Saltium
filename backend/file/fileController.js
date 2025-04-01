@@ -2,6 +2,8 @@
 const fileService = require('./fileService');
 const jwtUtils = require('../utils/jwtUtils');
 const File = require('../models/File');
+const ShareLink = require('../models/ShareLink');
+const { v4: uuidv4 } = require('uuid');
 const { sanitizeFileResponse } = require('../utils/responseUtils');
 
 exports.uploadFiles = async (req, res, next) => {
@@ -41,8 +43,14 @@ exports.generateDownloadLink = async (req, res, next) => {
             files: fileInfo
         });
 
+        const shareId = uuidv4();
+        await ShareLink.create({
+            shareId,
+            token: downloadToken
+        });
+
         res.status(200).json({ 
-            token: downloadToken,
+            shareId,
             expiresIn: 3600
         });
     } catch (error) {
@@ -52,24 +60,30 @@ exports.generateDownloadLink = async (req, res, next) => {
 
 exports.downloadFile = async (req, res, next) => {
     try {
-        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-            return res.status(404).json({ message: 'Files not found or download token expired' });
-        }
-
-        // Extract fileIds from files array in token
-        req.fileIds = req.files.map(file => file.id);
-        
-        // Handle errors that might occur during download
         const result = await fileService.downloadFilesWithToken(req, res);
         if (result?.error) {
             return res.status(result.status).json({ message: result.message });
         }
-
     } catch (error) {
-        // Only send error response if headers haven't been sent
         if (!res.headersSent) {
             const status = error.status || 500;
             res.status(status).json({ message: error.message || 'File download failed' });
         }
+    }
+};
+
+exports.listDownloadFiles = async (req, res, next) => {
+    try {
+        const fileList = req.files.map(file => ({
+            filename: file.name,
+            id: file.id
+        }));
+
+        res.status(200).json({ 
+            files: fileList,
+            count: fileList.length
+        });
+    } catch (error) {
+        next(error);
     }
 };

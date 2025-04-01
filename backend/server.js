@@ -26,7 +26,7 @@ app.use(express.json());
 initCleanupJob();
 
 app.use('/api/v1/private', apiLimiter, privateRouter);
-// app.use('/api/v1/public', apiLimiter, publicRouter);
+app.use('/api/v1/public', apiLimiter, publicRouter);
 
 app.use(errorHandler);
 

@@ -1,6 +1,7 @@
 // file/fileService.js
 const archiver = require('archiver');
 const File = require('../models/File');
+const ShareLink = require('../models/ShareLink');
 const logger = require('../config/logger');
 const cryptoUtils = require('../utils/cryptoUtils');
 const fileUtils = require('../utils/fileUtils')
@@ -48,43 +49,7 @@ const getDecryptedFileStream = async (file) => {
     }
 };
 
-const handleSingleFileDownload = async (file, res) => {
-    if (!file) {
-        const error = new Error('File not found');
-        error.status = 404;
-        throw error;
-    }
-
-    let fileStream;
-    try {
-        await File.findByIdAndUpdate(file._id, { lastAccessed: new Date() });
-        const { fileStream: stream, filename } = await getDecryptedFileStream(file);
-        fileStream = stream;
-
-        if (!res.headersSent) {
-            setResponseHeaders(res, 'single', filename);
-        }
-
-        return new Promise((resolve, reject) => {
-            fileStream.on('error', (err) => {
-                reject(new Error('File stream error: ' + err.message));
-            });
-
-            res.on('finish', async () => {
-                await cleanupAfterDownload([file]);
-                resolve();
-            });
-
-            fileStream.pipe(res);
-        });
-
-    } catch (error) {
-        if (fileStream) fileStream.destroy();
-        throw error;
-    }
-};
-
-const handleMultipleFilesDownload = async (files, res) => {
+const handleFileDownload = async (files, res, shareId) => {
     const archive = archiver('zip', { zlib: { level: 9 } });
     
     try {
@@ -93,8 +58,10 @@ const handleMultipleFilesDownload = async (files, res) => {
         ));
         
         if (res.headersSent) return;
-        
-        setResponseHeaders(res, 'multiple', 'files.zip');
+
+        // Always set zip headers
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="files.zip"`);
 
         return new Promise(async (resolve, reject) => {
             archive.on('error', (err) => {
@@ -102,7 +69,7 @@ const handleMultipleFilesDownload = async (files, res) => {
             });
 
             archive.on('end', async () => {
-                await cleanupAfterDownload(files);
+                await cleanupAfterDownload(files, shareId);
                 resolve();
             });
 
@@ -118,29 +85,26 @@ const handleMultipleFilesDownload = async (files, res) => {
 
     } catch (error) {
         archive.abort();
-        throw new Error('Error during multiple file download: ' + error.message);
+        throw new Error('Error during file download: ' + error.message);
     }
 };
 
-const setResponseHeaders = (res, type, filename) => {
-    if (type === 'single') {
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    } else if (type === 'multiple') {
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    }
-};
-
-const cleanupAfterDownload = async (files) => {
+const cleanupAfterDownload = async (files, shareId) => {
     try {
+        // Delete files from S3 and database
         for (const file of files) {
             await deleteFromS3(file.s3Key);
             await File.deleteOne({ _id: file._id });
             logger.info(`Cleaned up file after download: ${file.filename}`);
         }
+        // Delete the shareLink entry
+        if (shareId) {
+            await ShareLink.deleteOne({ shareId });
+            logger.info(`Cleaned up ShareLink: ${shareId}`);
+        }
     } catch (error) {
         logger.error('Error during cleanup:', error);
-        throw new Error('Error cleaning up files after download');
+        throw new Error('Error cleaning up after download');
     }
 };
 
@@ -178,6 +142,9 @@ exports.downloadFilesWithToken = async (req, res) => {
         const files = await File.find({ _id: { $in: req.fileIds }, uploadedBy: req.userId });
         
         if (!files || files.length === 0) {
+            if (req.params.shareId || req.query.shareId) {
+                await ShareLink.deleteOne({ shareId: req.params.shareId || req.query.shareId });
+            }
             return {
                 error: true,
                 status: 404,
@@ -185,14 +152,9 @@ exports.downloadFilesWithToken = async (req, res) => {
             };
         }
 
-        // Start the download before any potential cleanup
-        if (files.length === 1) {
-            await handleSingleFileDownload(files[0], res);
-        } else {
-            await handleMultipleFilesDownload(files, res);
-        }
-
-        return null; // Successful download, no error
+        const shareId = req.params.shareId || req.query.shareId;
+        await handleFileDownload(files, res, shareId);
+        return null;
 
     } catch (error) {
         if (!res.headersSent) {
