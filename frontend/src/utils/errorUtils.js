@@ -66,6 +66,31 @@ export const handleApiError = (error) => {
       };
     }
 
+    // Add download-specific error handling
+    if (status === 401 && data.message?.includes('Share ID is required')) {
+      return {
+        message: 'Invalid download link',
+        shouldRedirect: true,
+        redirectTo: '/'
+      };
+    }
+
+    if (status === 404 && data.message?.includes('Share link not found')) {
+      return {
+        message: 'This download link has expired or is invalid',
+        shouldRedirect: true,
+        redirectTo: '/'
+      };
+    }
+
+    // Handle blob response errors for file download
+    if (error.response.config?.responseType === 'blob') {
+      return {
+        message: 'Failed to download files. Please try again.',
+        shouldRedirect: false
+      };
+    }
+
     // Validation errors (Zod errors from backend)
     if (status === 400 && data.message?.length > 0) {
       if (Array.isArray(data.message)) {

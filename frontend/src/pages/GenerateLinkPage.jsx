@@ -27,7 +27,7 @@ export default function GenerateLinkPage() {
 
     const generateDownloadUrl = (token) => {
         const origin = window.location.origin;
-        return `${origin}/download?token=${token}`;
+        return `${origin}/download/${token}`;
     };
 
     const fetchGeneratedLink = async () => {
@@ -44,7 +44,7 @@ export default function GenerateLinkPage() {
                 }
             );
             
-            const downloadUrl = generateDownloadUrl(response.data.token);
+            const downloadUrl = generateDownloadUrl(response.data.shareId);
             setLink(downloadUrl);
             setShowGenerateButton(false);
         } catch (error) {

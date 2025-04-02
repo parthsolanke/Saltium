@@ -15,7 +15,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<RegisterPage />} />
           <Route path="/upload" element={<Navigate to="/" replace />} />
-          <Route path="/download" element={<DownloadPage />} />
+          <Route path="/download/:shareId" element={<DownloadPage />} />
           <Route path="/generate-link" element={<GenerateLinkPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
