@@ -2,12 +2,14 @@
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const logger = require('./logger');
 
 const envFilePath = path.resolve(__dirname, '../.env');
 if (fs.existsSync(envFilePath)) {
     dotenv.config({ path: envFilePath });
+    logger.info('Using environment variables from .env file');
 } else {
-    console.warn('No .env file found, using environment variables directly.');
+    logger.info('No local .env file found, using Docker environment variables');
 }
 
 const requiredEnv = [
